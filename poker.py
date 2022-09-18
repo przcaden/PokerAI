@@ -11,6 +11,7 @@ import pygame
 # Triple: all three cards have the same value
 # Straight-flush: all cards are sequential and have the same suit
 
+# Dimensions for card sprites
 CARD_WIDTH = 100
 CARD_HEIGHT = 150
 
@@ -21,7 +22,7 @@ class Card:
         self.value = value
         self.visible = visible
 
-# Generate random cards for the player and computer
+# Generate random card objects for the player and computer
 def getRandomCards(card_value_list):
     vals = [] # random card index in deck
     p_cards = []
@@ -29,24 +30,29 @@ def getRandomCards(card_value_list):
 
     for i in range(6):
         vals.append(random.randrange(52))
+    print(len(vals))
     # Create player cards
     for i in range(3):
         card_value = card_value_list[vals[i]]
-        card_value_list.pop(vals[i]) # prevent card from being used again
+        #card_value_list.pop(vals[i]) # prevent card from being used again
         if i<2:
             p_cards.append(Card(card_value[0], card_value[1], True))
         else:
             p_cards.append(Card(card_value[0], card_value[1], False))
+    
     # Create computer cards
     for i in range(3):
         card_value = card_value_list[vals[3+i]]
-        card_value_list.pop(vals[i]) # prevent card from being used again
+        print(card_value)
+        #card_value_list.pop(vals[i]) # prevent card from being used again
         if i<2:
             c_cards.append(Card(card_value[0], card_value[1], True))
         else:
             c_cards.append(Card(card_value[0], card_value[1], False))
     return (p_cards, c_cards)
 
+# Generate lists of sprites for each player card and computer card.
+# Indexes are in the same order.
 def getCardSprites(p_cards, c_cards):
     p_sprites = []
     c_sprites = []
@@ -65,13 +71,6 @@ def getCardSprites(p_cards, c_cards):
         img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
         c_sprites.append(img)
     return p_sprites, c_sprites
-    
-
-# Change card's image.
-# Pass in card's value and its corresponding sprite
-def editCard(card, s):
-    img = pygame.image.load(os.path.join("assets", card.value + "_of_" + card.suit + ".png"))
-    s.image = img
 
 # Initialize GUI window
 pygame.init()
@@ -83,7 +82,11 @@ FPS = 60
 font = pygame.font.Font(None, 32)
 mainlabel = font.render('Welcome to a completely fair game of Poker', True, (255,255,255))
 secondlabel = font.render('Press start to begin', True, (255,255,255))
-start_button = font.render('Start', True, (255,255,255))
+start_label = font.render('Start', True, (255,255,255))
+player_cards_label = font.render('Player\'s Cards', True, (255,255,255))
+cpu_cards_label = font.render('Computer\'s Cards', True, (255,255,255))
+bet_label = font.render('Raise Bet', True, (255,255,255))
+fold_label = font.render('Fold', True, (255,255,255))
 
 def main():
     clock = pygame.time.Clock()
@@ -104,11 +107,11 @@ def main():
         pygame.display.update()
         clock.tick(FPS)
         
-        # Display labels and start button
+        # Display labels
         win.blit(mainlabel, (290, 250))
         win.blit(secondlabel, (400, 300))
         pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(468, 380, 70, 40))
-        win.blit(start_button, (475, 387, 70, 40))
+        win.blit(start_label, (475, 387, 70, 40))
 
         # Check for if player quit or if start button is clicked
         for event in pygame.event.get():
@@ -132,12 +135,21 @@ def main():
         # Run while game is being played
         while begin:
             pygame.display.update()
+            win.fill(pygame.Color('black'))
             clock.tick(FPS)
             
             # Display player cards on left, cpu cards on right
             for i in range(3):
                 win.blit(player_sprites[i], (100+130*i, 100))
                 win.blit(cpu_sprites[i], (100+130*i, 400))
+
+            # Display labels and buttons
+            win.blit(player_cards_label, (200, 50))
+            win.blit(cpu_cards_label, (180, 350))
+            pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(700, 380, 130, 40))
+            pygame.draw.rect(win, pygame.Color('red'), pygame.Rect(728, 450, 70, 40))
+            win.blit(bet_label, (715, 388))
+            win.blit(fold_label, (740, 458))
 
             # Check for events caused by the player
             for event in pygame.event.get():
