@@ -51,6 +51,28 @@ def getRandomCards(card_value_list):
             c_cards.append(Card(card_value[0], card_value[1], False))
     return (p_cards, c_cards)
 
+
+##checks winners
+def checkWinners(p_cards, c_cards, p_sprites, c_sprites) :
+    # we will first display the last card in both the computer and c- cards
+    p_cards[2].visible = True 
+    p_sprites[2] = pygame.image.load(os.path.join("assets", p_cards[2].value+"_of_"+p_cards[2].suit+".png"))
+    p_sprites[2] = pygame.transform.scale(p_sprites[2], (CARD_WIDTH, CARD_HEIGHT))
+
+    c_cards[2].visible = True  #make all cards visible?
+    c_sprites[2] = pygame.image.load(os.path.join("assets", c_cards[2].value+"_of_"+c_cards[2].suit+".png"))
+    c_sprites[2] = pygame.transform.scale(c_sprites[2], (CARD_WIDTH, CARD_HEIGHT))
+
+    #TODO
+    # we are  then going to check the cards and determine who's the winner
+    # what are the conditions for when someone wins? 
+    # have a rank based on the cards that they have
+    # we will then display who the winner is.
+
+
+
+
+
 # Generate lists of sprites for each player card and computer card.
 # Indexes are in the same order.
 def getCardSprites(p_cards, c_cards):
@@ -155,8 +177,10 @@ def main():
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP:
                     pos = pygame.mouse.get_pos()
-                    # if bet_button.rect.collidepoint(pos):
-                    #     begin = True
+                    # Check if fold button was clicked
+                    if 650 <= pos[0] <= 798 and 410 <= pos[1] <= 490:
+                        print('pressed')
+                        checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
                     if event.type == pygame.QUIT:
                         begin = False
 
