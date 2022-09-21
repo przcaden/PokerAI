@@ -1,7 +1,6 @@
 
 
 import os
-import tkinter as tk
 import random
 import pygame
 
@@ -60,7 +59,7 @@ def loadImage(card):
     return img
 
 ##checks winners
-def checkWinners(p_cards, c_cards, p_sprites, c_sprites) :
+def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
     # we will first display the last card in both the computer and c- cards
     p_cards[2].visible = True 
     p_sprites[2] = loadImage(p_cards[2])
@@ -100,8 +99,8 @@ FPS = 60
 # Initialize fonts, labels, etc.
 font = pygame.font.Font(None, 32)
 mainlabel = font.render('Welcome to a completely fair game of Poker', True, (255,255,255))
-secondlabel = font.render('Press start to begin', True, (255,255,255))
-start_label = font.render('Start', True, (255,255,255))
+secondlabel = font.render('Type a bet to begin', True, (255,255,255))
+start_label = font.render('Bet', True, (255,255,255))
 player_cards_label = font.render('Player\'s Cards', True, (255,255,255))
 cpu_cards_label = font.render('Computer\'s Cards', True, (255,255,255))
 bet_label = font.render('Raise Bet', True, (255,255,255))
@@ -111,6 +110,7 @@ def main():
     clock = pygame.time.Clock()
     run = False
     begin = True
+    bet_input = '$ '
 
     # Create a list of all possible suit/face values based on cards.txt
     card_value_list = [[]]
@@ -131,7 +131,10 @@ def main():
         win.blit(mainlabel, (290, 250))
         win.blit(secondlabel, (400, 300))
         pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(468, 380, 70, 40))
-        win.blit(start_label, (475, 387, 70, 40))
+        pygame.draw.rect(win, pygame.Color('white'), pygame.Rect(431, 450, 140, 40))
+        bet_surface = font.render(bet_input, True, (0,0,0))
+        win.blit(bet_surface, (450, 460))
+        win.blit(start_label, (483, 390, 70, 40))
 
         # Check for if player quit or if start button is clicked
         for event in pygame.event.get():
@@ -141,6 +144,11 @@ def main():
                     run = True
                 if event.type == pygame.QUIT:
                     run = True
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_BACKSPACE:
+                    bet_input = bet_input[:-1]
+                elif len(bet_input)<8 and event.unicode.isnumeric():
+                    bet_input += event.unicode
 
     # If game has started, run the else block
     while run:
