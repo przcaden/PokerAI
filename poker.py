@@ -25,45 +25,50 @@ class Card:
 # Generate random card objects for the player and computer
 def getRandomCards(card_value_list):
     vals = [] # random card index in deck
-    p_cards = []
-    c_cards = []
+    p_cards = [] # holds card objects for player
+    c_cards = [] # holds card objects for computer
 
+    # Create random card values
     for i in range(6):
         vals.append(random.randrange(52))
-    print(len(vals))
+
     # Create player cards
     for i in range(3):
-        card_value = card_value_list[vals[i]]
-        #card_value_list.pop(vals[i]) # prevent card from being used again
+        p_card_value = card_value_list[vals[i]]
+        c_card_value = card_value_list[vals[3+i]]
+
+        # Prevent cards from being used again (in progress)
+        # card_value_list.pop(vals[i])
+        # card_value_list.pop(vals[2+i])
+
         if i<2:
-            p_cards.append(Card(card_value[0], card_value[1], True))
+            p_cards.append(Card(p_card_value[0], p_card_value[1], True))
+            c_cards.append(Card(c_card_value[0], c_card_value[1], True))
         else:
-            p_cards.append(Card(card_value[0], card_value[1], False))
-    
-    # Create computer cards
-    for i in range(3):
-        card_value = card_value_list[vals[3+i]]
-        print(card_value)
-        #card_value_list.pop(vals[i]) # prevent card from being used again
-        if i<2:
-            c_cards.append(Card(card_value[0], card_value[1], True))
-        else:
-            c_cards.append(Card(card_value[0], card_value[1], False))
+            p_cards.append(Card(p_card_value[0], p_card_value[1], False))
+            c_cards.append(Card(c_card_value[0], c_card_value[1], False))
     return (p_cards, c_cards)
 
+# Load image based on the passed card's values.
+# If the card is face down, load the back image. Otherwise load the actual card.
+def loadImage(card):
+    if card.visible:
+        img = pygame.image.load(os.path.join("assets", card.value+"_of_"+card.suit+".png"))
+    else:
+        img = pygame.image.load(os.path.join("assets/back.png"))
+    img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
+    return img
 
 ##checks winners
 def checkWinners(p_cards, c_cards, p_sprites, c_sprites) :
     # we will first display the last card in both the computer and c- cards
     p_cards[2].visible = True 
-    p_sprites[2] = pygame.image.load(os.path.join("assets", p_cards[2].value+"_of_"+p_cards[2].suit+".png"))
-    p_sprites[2] = pygame.transform.scale(p_sprites[2], (CARD_WIDTH, CARD_HEIGHT))
+    p_sprites[2] = loadImage(p_cards[2])
 
     c_cards[2].visible = True  #make all cards visible?
-    c_sprites[2] = pygame.image.load(os.path.join("assets", c_cards[2].value+"_of_"+c_cards[2].suit+".png"))
-    c_sprites[2] = pygame.transform.scale(c_sprites[2], (CARD_WIDTH, CARD_HEIGHT))
+    c_sprites[2] = loadImage(c_cards[2])
 
-    #TODO
+    # TO-DO
     # we are  then going to check the cards and determine who's the winner
     # what are the conditions for when someone wins? 
     # have a rank based on the cards that they have
@@ -79,18 +84,10 @@ def getCardSprites(p_cards, c_cards):
     p_sprites = []
     c_sprites = []
     for p in p_cards:
-        if p.visible:
-            img = pygame.image.load(os.path.join("assets", p.value+"_of_"+p.suit+".png"))
-        else:
-            img = pygame.image.load(os.path.join("assets/back.png"))
-        img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
+        img = loadImage(p)
         p_sprites.append(img)
     for c in c_cards:
-        if c.visible:
-            img = pygame.image.load(os.path.join("assets", c.value+"_of_"+c.suit+".png"))
-        else:
-            img = pygame.image.load(os.path.join("assets/back.png"))
-        img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
+        img = loadImage(c)
         c_sprites.append(img)
     return p_sprites, c_sprites
 
@@ -123,6 +120,7 @@ def main():
         card_value = d.split("_of_")
         card_value_list.append(card_value)
     data.close()
+    card_value_list.pop(0)
 
     # Run following block if game is in main menu
     while not run:
@@ -179,7 +177,6 @@ def main():
                     pos = pygame.mouse.get_pos()
                     # Check if fold button was clicked
                     if 650 <= pos[0] <= 798 and 410 <= pos[1] <= 490:
-                        print('pressed')
                         checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
                     if event.type == pygame.QUIT:
                         begin = False
