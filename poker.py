@@ -75,7 +75,8 @@ def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
 
 
 
-
+def makeComputerDecision():
+    return 1
 
 # Generate lists of sprites for each player card and computer card.
 # Indexes are in the same order.
@@ -106,6 +107,7 @@ cpu_cards_label = font.render('Computer\'s Cards', True, (255,255,255))
 bet_label = font.render('Raise Bet', True, (255,255,255))
 fold_label = font.render('Fold', True, (255,255,255))
 
+# Main game function. Displays all GUI components and runs game logic functions.
 def main():
     clock = pygame.time.Clock()
     run = False
@@ -136,16 +138,16 @@ def main():
         win.blit(bet_surface, (450, 460))
         win.blit(start_label, (483, 390, 70, 40))
 
-        # Check for if player quit or if start button is clicked
+        # Check if player quit or if start button is clicked
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONUP:
+            if event.type == pygame.QUIT:
+                    pygame.quit()
+            if event.type == pygame.MOUSEBUTTONUP and len(bet_input) > 2:
                 pos = pygame.mouse.get_pos()
                 if 398 <= pos[0] <= 538 and 340 <= pos[1] <= 420:
                     run = True
-                if event.type == pygame.QUIT:
-                    run = True
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == pygame.K_BACKSPACE and len(bet_input) > 2:
                     bet_input = bet_input[:-1]
                 elif len(bet_input)<8 and event.unicode.isnumeric():
                     bet_input += event.unicode
@@ -154,6 +156,10 @@ def main():
     while run:
         player_sprites = []
         cpu_sprites = []
+        turnEnded = False
+        cpu_bet = int(bet_input[2:])
+        player_bet = int(bet_input[2:])
+        bet_raise = '+$ '
 
         # Generate card objects for the player and computer
         (player_cards, cpu_cards) = getRandomCards(card_value_list)
@@ -174,10 +180,20 @@ def main():
             # Display labels and buttons
             win.blit(player_cards_label, (200, 50))
             win.blit(cpu_cards_label, (180, 350))
-            pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(700, 380, 130, 40))
-            pygame.draw.rect(win, pygame.Color('red'), pygame.Rect(728, 450, 70, 40))
-            win.blit(bet_label, (715, 388))
-            win.blit(fold_label, (740, 458))
+            if turnEnded:
+                pygame.draw.rect(win, pygame.Color('gray'), pygame.Rect(700, 330, 130, 40))
+            else:
+                pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(700, 330, 130, 40))
+            pygame.draw.rect(win, pygame.Color('white'), pygame.Rect(694, 385, 140, 40))
+            pygame.draw.rect(win, pygame.Color('red'), pygame.Rect(728, 460, 70, 40))
+            win.blit(bet_label, (715, 338))
+            win.blit(fold_label, (740, 468))
+            raise_surface = font.render(bet_raise, True, (0,0,0))
+            win.blit(raise_surface, (709, 393))
+            plabel = font.render('Player Bet Amount: $'+str(player_bet), True, (255,255,255))
+            clabel = font.render('CPU Bet Amount: $'+str(cpu_bet), True, (255,255,255))
+            win.blit(plabel, (630, 60))
+            win.blit(clabel, (630, 110))
 
             # Check for events caused by the player
             for event in pygame.event.get():
@@ -186,8 +202,19 @@ def main():
                     # Check if fold button was clicked
                     if 650 <= pos[0] <= 798 and 410 <= pos[1] <= 490:
                         checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
-                    if event.type == pygame.QUIT:
-                        begin = False
+                        turnEnded = True
+                    # Check if bet button was clicked
+                    if 570 <= pos[0] <= 830 and 290 <= pos[1] <= 370 and turnEnded == False and len(bet_raise) > 3:
+                        player_bet += int(bet_raise[3:])
+                        bet_raise = '+$ '
+                        cpu_bet += makeComputerDecision()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_BACKSPACE and len(bet_raise) > 3:
+                        bet_raise = bet_raise[:-1]
+                    elif len(bet_raise) < 8 and event.unicode.isnumeric():
+                        bet_raise += event.unicode
+                if event.type == pygame.QUIT:
+                    pygame.quit()
 
 if __name__ == '__main__':
     main()
