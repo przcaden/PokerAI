@@ -52,14 +52,13 @@ def getRandomCards(card_value_list):
 
         if c_card_value[0] == "ace":
             c_val = 14
-        elif p_card_value[0] == "king":
+        elif c_card_value[0] == "king":
             c_val = 13
-        elif p_card_value[0] == "queen":
+        elif c_card_value[0] == "queen":
             c_val = 12
-        elif p_card_value[0] == "jack":
+        elif c_card_value[0] == "jack":
             c_val = 11
         else:
-            print(c_card_value[0])
             c_val = int(c_card_value[0])
 
         if i<2:
@@ -232,7 +231,7 @@ def main():
                 if event.type == pygame.MOUSEBUTTONUP:
                     pos = pygame.mouse.get_pos()
                     # Check if fold button was clicked
-                    if 728 <= pos[0] <= 798 and 460 <= pos[1] <= 480:
+                    if 728 <= pos[0] <= 798 and 460 <= pos[1] <= 500:
                         checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
                         turnEnded = True
                     # Check if bet button was clicked
