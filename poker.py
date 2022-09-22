@@ -58,6 +58,34 @@ def loadImage(card):
     img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
     return img
 
+#determinnes what hands the user or computer has
+def checkHands(cards):
+    # we check all the cards and determine  what hand the user or computer has
+    for i in range(3):
+         # when  a pair exists
+        if cards[i].value == cards[i+1].value:
+             print("pair exists")
+
+        # when there is a flush in the cards
+        # a flush exists when all the cards belong to the same suit
+        if cards[i].suit == cards[i+1]. suit:
+            print("flush exists")
+            
+        #when it is a triple
+        #when all the cards have the same value
+        if cards[i].value == cards[i+1].value:
+            print("triple exists")
+            
+         # when it is a straight
+         # when all the cards are sequential. 
+
+    # when it is a triple.
+
+
+    #when it is a straight-flush.
+
+
+
 ##checks winners
 def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
     # we will first display the last card in both the computer and c- cards
