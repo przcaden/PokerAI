@@ -3,12 +3,14 @@
 import os
 import random
 import pygame
+import time
 
 # Pair: two cards with the same value
 # Flush: all cards have the same suit
 # Straight: all cards are sequential
 # Triple: all three cards have the same value
 # Straight-flush: all cards are sequential and have the same suit
+# Order of cards: Ace, King, Queen, Jack, Numbers
 
 # Dimensions for card sprites
 CARD_WIDTH = 100
@@ -16,9 +18,10 @@ CARD_HEIGHT = 150
 
 # Card class has a value/face, suit, and can be face down
 class Card:
-    def __init__(self, value, suit, visible):
+    def __init__(self, value, suit, visible, face):
         self.suit = suit
         self.value = value
+        self.face = face
         self.visible = visible
 
 # Generate random card objects for the player and computer
@@ -36,23 +39,44 @@ def getRandomCards(card_value_list):
         p_card_value = card_value_list[vals[i]]
         c_card_value = card_value_list[vals[3+i]]
 
-        # Prevent cards from being used again (in progress)
-        # card_value_list.pop(vals[i])
-        # card_value_list.pop(vals[2+i])
+        if p_card_value[0] == "ace":
+            p_val = 14
+        elif p_card_value[0] == "king":
+            p_val = 13
+        elif p_card_value[0] == "queen":
+            p_val = 12
+        elif p_card_value[0] == "jack":
+            p_val = 11
+        else:
+            p_val = int(p_card_value[0])
+
+        if c_card_value[0] == "ace":
+            c_val = 14
+        elif p_card_value[0] == "king":
+            c_val = 13
+        elif p_card_value[0] == "queen":
+            c_val = 12
+        elif p_card_value[0] == "jack":
+            c_val = 11
+        else:
+            print(c_card_value[0])
+            c_val = int(c_card_value[0])
 
         if i<2:
-            p_cards.append(Card(p_card_value[0], p_card_value[1], True))
-            c_cards.append(Card(c_card_value[0], c_card_value[1], True))
+            p_cards.append(Card(p_val, p_card_value[1], True, p_card_value[0]))
+            c_cards.append(Card(c_val, c_card_value[1], True, c_card_value[0]))
         else:
-            p_cards.append(Card(p_card_value[0], p_card_value[1], False))
-            c_cards.append(Card(c_card_value[0], c_card_value[1], False))
+            p_cards.append(Card(p_val, p_card_value[1], False, p_card_value[0]))
+            c_cards.append(Card(c_val, c_card_value[1], False, c_card_value[0]))
+    print(p_cards)
+    print(c_cards)
     return (p_cards, c_cards)
 
 # Load image based on the passed card's values.
 # If the card is face down, load the back image. Otherwise load the actual card.
 def loadImage(card):
     if card.visible:
-        img = pygame.image.load(os.path.join("assets", card.value+"_of_"+card.suit+".png"))
+        img = pygame.image.load(os.path.join("assets", str(card.face)+"_of_"+card.suit+".png"))
     else:
         img = pygame.image.load(os.path.join("assets/back.png"))
     img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
@@ -166,14 +190,15 @@ def main():
         win.blit(bet_surface, (450, 460))
         win.blit(start_label, (483, 390, 70, 40))
 
-        # Check if player quit or if start button is clicked
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                     pygame.quit()
+            # Check if user clicked bet button
             if event.type == pygame.MOUSEBUTTONUP and len(bet_input) > 2:
                 pos = pygame.mouse.get_pos()
                 if 398 <= pos[0] <= 538 and 340 <= pos[1] <= 420:
                     run = True
+            # Check if user types into box
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE and len(bet_input) > 2:
                     bet_input = bet_input[:-1]
@@ -212,30 +237,38 @@ def main():
                 pygame.draw.rect(win, pygame.Color('gray'), pygame.Rect(700, 330, 130, 40))
             else:
                 pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(700, 330, 130, 40))
-            pygame.draw.rect(win, pygame.Color('white'), pygame.Rect(694, 385, 140, 40))
+            
             pygame.draw.rect(win, pygame.Color('red'), pygame.Rect(728, 460, 70, 40))
             win.blit(bet_label, (715, 338))
             win.blit(fold_label, (740, 468))
-            raise_surface = font.render(bet_raise, True, (0,0,0))
-            win.blit(raise_surface, (709, 393))
             plabel = font.render('Player Bet Amount: $'+str(player_bet), True, (255,255,255))
             clabel = font.render('CPU Bet Amount: $'+str(cpu_bet), True, (255,255,255))
             win.blit(plabel, (630, 60))
             win.blit(clabel, (630, 110))
+
+            # Display text box
+            pygame.draw.rect(win, pygame.Color('white'), pygame.Rect(694, 385, 140, 40))
+            raise_text_surface = font.render(bet_raise, True, (0,0,0))
+            win.blit(raise_text_surface, (709, 393))
+            # if time.time() % 1 > 0.5:
+            #     text_rect = raise_text_surface.get_rect
+            #     cursor = pygame.Rect(raise_text_surface.topright, )
+            #     pygame.draw.rect(win, pygame.Color('black'), cursor)
 
             # Check for events caused by the player
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP:
                     pos = pygame.mouse.get_pos()
                     # Check if fold button was clicked
-                    if 650 <= pos[0] <= 798 and 410 <= pos[1] <= 490:
+                    if 728 <= pos[0] <= 798 and 460 <= pos[1] <= 480:
                         checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
                         turnEnded = True
                     # Check if bet button was clicked
-                    if 570 <= pos[0] <= 830 and 290 <= pos[1] <= 370 and turnEnded == False and len(bet_raise) > 3:
+                    if 700 <= pos[0] <= 830 and 330 <= pos[1] <= 370 and turnEnded == False and len(bet_raise) > 3:
                         player_bet += int(bet_raise[3:])
                         bet_raise = '+$ '
                         cpu_bet += makeComputerDecision()
+                # Check if user types into box
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE and len(bet_raise) > 3:
                         bet_raise = bet_raise[:-1]
