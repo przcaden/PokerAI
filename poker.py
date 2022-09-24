@@ -69,8 +69,6 @@ def getRandomCards(card_value_list):
         else:
             p_cards.append(Card(p_val, p_card_value[1], False, p_card_value[0]))
             c_cards.append(Card(c_val, c_card_value[1], False, c_card_value[0]))
-    print(p_cards)
-    print(c_cards)
     return (p_cards, c_cards)
 
 # Load image based on the passed card's values.
@@ -107,8 +105,106 @@ def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
 #       function will return -1 if deciding to fold
 #       function will return 0 if deciding to match the bet
 #       otherwise, the function will return a number indicating how much to raise above the player's bet
-def makeComputerDecision(p_cards, c_cards):
-    return 1
+def makeComputerDecision(p_cards, c_cards, p_bet, c_bet):
+    p_hand = checkHand(p_cards)
+    c_hand = checkHand(c_cards)
+
+    # Using strings for the return type of checkHand().
+    # Can change later, just starting basic logic.
+
+    # Fold if player has bet more than allowed by the cpu (might change later)
+    # if p_bet >= CPU_MAX_BET_AMOUNT:
+    #     return -1
+
+    # Decision making for when the player has a pair.
+    if p_hand == "pair":
+        # If the CPU has a worse hand, change its face down card
+        if c_hand == "none":
+            c_cards[2].value = c_cards[0].value
+        if c_hand == "pair":
+            # Try to change to triple
+            if c_cards[0].value == c_cards[1].value:
+                c_cards[2].value == c_cards[1].value
+            # Try to change to flush
+            elif c_cards[0].suit == c_cards[1].suit:
+                c_cards[2].suit == c_cards[1].suit
+            # If cheating is not possible, match user's bet
+            else: return 0
+        # If CPU has a better hand, raise above user's bet
+        else: return determineRaiseAmount()
+
+    # Make decision for when the player has a flush.
+    elif p_hand == "flush":
+        # Check if the computer has a worse hand (cheat)
+        if c_hand == "none":
+            # Change computer's hand to a flush if possible
+            if c_cards[0].value == c_cards[1].value-1:
+                c_cards[2].value = c_cards[1].value+1
+                return 0
+            elif c_cards[0].value == c_cards[1].value+1:
+                c_cards[2].value = c_cards[1].value-1
+                return 0
+            # Fold if discreet cheating is not possible
+            else: return -1
+        elif c_hand == "pair" or c_hand =="flush":
+            # If the two face up cards are a pair, change the third to make a triple
+            if c_cards[0].value == c_cards[1].value:
+                c_cards[2].value == c_cards[1].value
+        elif c_hand == "flush":
+            # Check if hand can be made sequential (try to straight-flush)
+            if c_cards[0].value == c_cards[1].value-1:
+                c_cards[2].value = c_cards[1].value+1
+                return determineRaiseAmount()
+            elif c_cards[0].value == c_cards[1].value+1:
+                c_cards[2].value = c_cards[1].value-1
+                return determineRaiseAmount()
+            # Check if hand can be made into triple
+            elif c_cards[0].value == c_cards[1].value:
+                c_cards[2].value == c_cards[1].value
+                return determineRaiseAmount()
+            # Match user's raise if cheating is not possible
+            else: return 0
+        # If computer has a better hand, raise above player's bet
+        else: return determineRaiseAmount()
+
+    # Make decision for when the player has a straight.
+    elif p_hand == "straight":
+        if c_hand == "pair":
+            # Try to change to triple
+            if c_cards[0].value == c_cards[1].value:
+                c_cards[2].value == c_cards[1].value
+                return determineRaiseAmount()
+            else: return -1
+        elif c_hand == "flush":
+            # Try to get straight-flush
+            if c_cards[0].value == c_cards[1].value-1:
+                c_cards[2].value = c_cards[1].value+1
+                return determineRaiseAmount()
+            else: return -1
+        elif c_hand == "straight":
+            # Try to get straight-flush
+            if c_cards[0].suit == c_cards[1].suit:
+                c_cards[2].suit == c_cards[1].suit
+            else: return 0
+        else: return determineRaiseAmount()
+
+    # Make decision for when the player has a triple.
+    elif p_hand == "triple":
+        if c_hand == "straight_flush":
+            return determineRaiseAmount()
+        elif c_hand == "triple":
+            return 0
+        else: return -1
+
+    # Make decision for when the player has a straight-flush.
+    elif p_hand == "straight_flush":
+        if c_hand == "straight_flush":
+            return 0
+        else: return -1
+
+# Determine how much the CPU should raise above player's bet
+def determineRaiseAmount():
+    return 50
 
 # Generate lists of sprites for each player card and computer card.
 # Indexes are in the same order.
@@ -181,7 +277,7 @@ def main():
             # Check if user clicked bet button
             if event.type == pygame.MOUSEBUTTONUP and len(bet_input) > 2:
                 pos = pygame.mouse.get_pos()
-                if 398 <= pos[0] <= 538 and 340 <= pos[1] <= 420:
+                if 468 <= pos[0] <= 538 and 380 <= pos[1] <= 420:
                     run = True
             # Check if user types into box
             if event.type == pygame.KEYDOWN:
@@ -202,7 +298,7 @@ def main():
 
         # Generate card objects for the player and computer
         (player_cards, cpu_cards) = getRandomCards(card_value_list)
-        # Gather sprites based on card objects
+        # Gather sprites for card objects
         (player_sprites, cpu_sprites) = getCardSprites(player_cards, cpu_cards)
 
         # Run while game is being played
