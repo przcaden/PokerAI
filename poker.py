@@ -16,6 +16,8 @@ import time
 CARD_WIDTH = 100
 CARD_HEIGHT = 150
 
+CPU_MAX_BET_AMOUNT = 5000
+
 # Card class has a value/face, suit, and can be face down
 class Card:
     def __init__(self, value, suit, visible, face):
@@ -146,7 +148,7 @@ def makeComputerDecision(p_cards, c_cards, p_bet, c_bet):
                 return 0
             # Fold if discreet cheating is not possible
             else: return -1
-        elif c_hand == "pair" or c_hand =="flush":
+        elif c_hand == "pair" or c_hand == "flush":
             # If the two face up cards are a pair, change the third to make a triple
             if c_cards[0].value == c_cards[1].value:
                 c_cards[2].value == c_cards[1].value
@@ -203,7 +205,9 @@ def makeComputerDecision(p_cards, c_cards, p_bet, c_bet):
         else: return -1
 
 # Determine how much the CPU should raise above player's bet
-def determineRaiseAmount():
+def determineRaiseAmount(c_bet):
+    if c_bet + 50 > CPU_MAX_BET_AMOUNT:
+        return CPU_MAX_BET_AMOUNT - c_bet
     return 50
 
 # Generate lists of sprites for each player card and computer card.
@@ -227,6 +231,7 @@ FPS = 60
 
 # Initialize fonts, labels, etc.
 font = pygame.font.Font(None, 32)
+smallfont = pygame.font.Font(None, 24)
 mainlabel = font.render('Welcome to a completely fair game of Poker', True, (255,255,255))
 secondlabel = font.render('Type a bet to begin', True, (255,255,255))
 start_label = font.render('Bet', True, (255,255,255))
@@ -234,6 +239,8 @@ player_cards_label = font.render('Player\'s Cards', True, (255,255,255))
 cpu_cards_label = font.render('Computer\'s Cards', True, (255,255,255))
 bet_label = font.render('Raise Bet', True, (255,255,255))
 fold_label = font.render('Fold', True, (255,255,255))
+yes_label = font.render('Yes', True, (255,255,255))
+no_label = font.render('No', True, (255,255,255))
 
 # Main game function. Displays all GUI components and runs game logic functions.
 def main():
@@ -286,8 +293,12 @@ def main():
                 elif len(bet_input)<8 and event.unicode.isnumeric():
                     bet_input += event.unicode
 
+    player_winnings = 0
+    cpu_winnings = 0
+
     # If game has started, run the else block
     while run:
+        begin = True
         player_sprites = []
         cpu_sprites = []
         turnEnded = False
@@ -295,6 +306,8 @@ def main():
         player_bet = int(bet_input[2:])
         bet_raise = '+$ '
         game_status = ''
+        winner = -1
+        win_msg = ''
 
         # Generate card objects for the player and computer
         (player_cards, cpu_cards) = getRandomCards(card_value_list)
@@ -312,65 +325,103 @@ def main():
                 win.blit(player_sprites[i], (100+130*i, 100))
                 win.blit(cpu_sprites[i], (100+130*i, 400))
 
-            # Display labels and buttons
+            # Display general labels
             win.blit(player_cards_label, (200, 50))
             win.blit(cpu_cards_label, (180, 350))
-            if turnEnded:
-                pygame.draw.rect(win, pygame.Color('gray'), pygame.Rect(700, 330, 130, 40))
-            else:
-                pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(700, 330, 130, 40))
-            
-            pygame.draw.rect(win, pygame.Color('red'), pygame.Rect(728, 460, 70, 40))
-            win.blit(bet_label, (715, 338))
-            win.blit(fold_label, (740, 468))
             plabel = font.render('Player Bet Amount: $'+str(player_bet), True, (255,255,255))
             clabel = font.render('CPU Bet Amount: $'+str(cpu_bet), True, (255,255,255))
             win.blit(plabel, (630, 60))
             win.blit(clabel, (630, 110))
             game_status_label = font.render(game_status, True, pygame.Color('red'))
             win.blit(game_status_label, (630, 200))
+            if player_winnings > 0 or cpu_winnings > 0:
+                p_winnings_label = smallfont.render('Player winnings: $' + str(player_winnings), True, (255,255,255))
+                c_winnings_label = smallfont.render('CPU winnings: $' + str(cpu_winnings), True, (255,255,255))
+                win.blit(p_winnings_label, (500, 550))
+                win.blit(c_winnings_label, (500, 570))
 
-            # Display text box and cursor
-            pygame.draw.rect(win, pygame.Color('white'), pygame.Rect(694, 385, 140, 40))
-            raise_text_surface = font.render(bet_raise, True, (0,0,0))
-            win.blit(raise_text_surface, (709, 393))
-            if time.time() % 1 > 0.5 and turnEnded == False:
-                text_rect = raise_text_surface.get_rect()
-                cursor = pygame.Rect((text_rect.topright[0]+711,text_rect.topright[1]+391), (3, text_rect.height + 2))
-                pygame.draw.rect(win, pygame.Color('black'), cursor)
+            # Display the following labels if the deal is ongoing
+            if winner == -1:
+                if turnEnded:
+                    pygame.draw.rect(win, pygame.Color('gray'), pygame.Rect(700, 330, 130, 40))
+                else:
+                    pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(700, 330, 130, 40))
+                
+                pygame.draw.rect(win, pygame.Color('red'), pygame.Rect(728, 460, 70, 40))
+                win.blit(bet_label, (715, 338))
+                win.blit(fold_label, (740, 468))
+
+                # Display text box and cursor
+                pygame.draw.rect(win, pygame.Color('white'), pygame.Rect(694, 385, 140, 40))
+                raise_text_surface = font.render(bet_raise, True, (0,0,0))
+                win.blit(raise_text_surface, (709, 393))
+                if time.time() % 1 > 0.5 and turnEnded == False:
+                    text_rect = raise_text_surface.get_rect()
+                    cursor = pygame.Rect((text_rect.topright[0]+711,text_rect.topright[1]+391), (3, text_rect.height + 2))
+                    pygame.draw.rect(win, pygame.Color('black'), cursor)
+
+            # Display the following labels if the deal has ended
+            else:
+                win_msg_surface = font.render(win_msg, True, (255,255,255))
+                win.blit(win_msg_surface, (600, 280))
+                pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(730, 330, 80, 40))
+                pygame.draw.rect(win, pygame.Color('red'), pygame.Rect(620, 330, 80, 40))
+                win.blit(yes_label, (750, 340))
+                win.blit(no_label, (645, 340))
 
             # Check for events caused by the player
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP:
                     pos = pygame.mouse.get_pos()
-                    # Check if fold button was clicked
-                    if 728 <= pos[0] <= 798 and 460 <= pos[1] <= 500:
-                        checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
-                        turnEnded = True
-                        bet_raise = '+$ '
-                    # Check if bet button was clicked
-                    if 700 <= pos[0] <= 830 and 330 <= pos[1] <= 370 and turnEnded == False and len(bet_raise) > 3:
-                        player_bet += int(bet_raise[3:])
-                        bet_raise = '+$ '
-                        decision = makeComputerDecision(player_cards, cpu_cards)
-
-                        # Change bet and conditions based on what decision was made.
-                        if decision == 0:
+                    # Check if in-game buttons were clicked
+                    if winner == -1:
+                        # Check if fold button was clicked
+                        if 728 <= pos[0] <= 798 and 460 <= pos[1] <= 500:
+                            winner = checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
+                            winner = 0 # REMOVE LATER
                             turnEnded = True
-                            game_status = 'CPU folded.'
-                        if decision == 1:
-                            cpu_bet = player_bet
-                            game_status = 'CPU matched your bet.'
-                        else:
-                            cpu_bet = player_bet + decision
-                            game_status = 'CPU raised above your bet.'
+                            bet_raise = '+$ '
+                            if winner == 0:
+                                win_msg = 'You won! Deal again?'
+                                player_winnings += player_bet
+                            elif winner == 1:
+                                win_msg == 'CPU won. Deal again?'
+                                cpu_winnings += cpu_bet
+                        # Check if bet button was clicked; if so, run AI decisionmaking
+                        if 700 <= pos[0] <= 830 and 330 <= pos[1] <= 370 and turnEnded == False and len(bet_raise) > 3:
+                            player_bet += int(bet_raise[3:])
+                            bet_raise = '+$ '
+                            decision = makeComputerDecision(player_cards, cpu_cards)
 
+                            # Change bet and conditions based on what decision was made.
+                            if decision == 0:
+                                turnEnded = True
+                                game_status = 'CPU folded.'
+                            if decision == 1:
+                                cpu_bet = player_bet
+                                game_status = 'CPU matched your bet.'
+                            else:
+                                cpu_bet = player_bet + decision
+                                game_status = 'CPU raised above your bet.'
+
+                    # Check if buttons were clicked when game over screen is displayed
+                    else:
+                        # Check if yes button was clicked; if so, restart deal
+                        if 730 <= pos[0] <= 810 and 330 <= pos[1] <= 370:
+                            begin = False
+                        # Check if no button was clicked; if so, close window
+                        if 620 <= pos[0] <= 700 and 330 <= pos[1] <= 370:
+                            begin = False
+                            run = False
                 # Check if user types into box
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE and len(bet_raise) > 3:
                         bet_raise = bet_raise[:-1]
                     elif len(bet_raise) < 8 and event.unicode.isnumeric() and turnEnded == False:
                         bet_raise += event.unicode
+                    
+
+
                 if event.type == pygame.QUIT:
                     pygame.quit()
 
