@@ -86,6 +86,11 @@ def loadImage(card):
     img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
     return img
 
+def refreshImages(p_cards, c_cards, p_sprites, c_sprites):
+    for i in range(2):
+        p_sprites[i] = loadImage(p_cards[i])
+        c_sprites[i] = loadImage(c_cards[i])
+
 
 def check_pair_or_triple(cards):
     #loop through the different hands
@@ -94,19 +99,9 @@ def check_pair_or_triple(cards):
         count = 2
     elif cards[0].value == cards[1].value and cards[1].value == cards[2].value:
         count = 3
-
     return count
 
 def check_straight(cards):
-    #straights exist when all the cards have adjacent ranks. 
-    # count = 0
-    # for rank in (14, *range (2 , 15)):
-    #     if rank in cards: 
-    #         count +=1
-    #         if count == 3:
-    #             return True
-    #     else:
-    #         return False
     if cards[0].value > cards[1].value > cards[2].value:
         return True
     elif cards[0].value < cards[1].value < cards[2].value:
@@ -123,33 +118,28 @@ def check_flush(cards):
 
 #dhecks all the  hands the user or computer has
 def checkAllHands(cards):
-    # when  a pair exists
-    if check_pair_or_triple(cards) == 2:
-        return "pair"
-    
-    # when there is a triple
-    elif check_pair_or_triple(cards) == 3:
-        return "triple"
-
-    # when there is a flush
-    elif check_flush(cards) == True:
-        return "flush"
-
+     #when it is a straight-flush.
+    if check_straight(cards) == True and check_flush(cards) == True:
+        return "straight-flush"
     #when there is a straight
     elif check_straight(cards) == True:
         return "straight"
-
-     #when it is a straight-flush.
-    elif check_straight(cards) == True and check_flush(cards) == True:
-        return "straight-flush"
-    
+    # when there is a flush
+    elif check_flush(cards) == True:
+        return "flush"
+        # when there is a triple
+    elif check_pair_or_triple(cards) == 3:
+        return "triple"
+    # when  a pair exists
+    if check_pair_or_triple(cards) == 2:
+        return "pair"
     else: return "none"
 
 
 #checkrank of hands
 def checkCardRanks(cards):
      # create a dictionary that has all the possible hands with their ranks
-    poker_ranks = {"pair": 5, "flush": 4, "straight": 3, "triple": 2, "straight-flush": 1, "none": 0 }
+    poker_ranks = { "none": 0, "pair": 1, "flush": 2, "straight": 3, "triple": 4, "straight-flush": 5 }
     #we will then get hands and compare
     for key, value in poker_ranks.items():
         #if the hand is the same as the key, then we want to return the ranks
@@ -168,10 +158,35 @@ def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
     c_sprites[2] = loadImage(c_cards[2])
 
     #check rank of computer and user hands and determine the winner
-    if checkCardRanks(c_cards) > checkCardRanks(p_cards):
-        return 1
-    else: 
+    p_rank = checkCardRanks(p_cards)
+    c_rank = checkCardRanks(c_cards)
+
+    print('player hand rank: ' + str(p_rank))
+    print('cpu hand rank: ' + str(c_rank))
+
+    if p_rank == c_rank:
+        p_top = 0
+        c_top = 0
+        for i in range(3):
+            if p_cards[i].value > p_top:
+                p_top = p_cards[i].value
+            if c_cards[i].value > c_top:
+                c_top = c_cards[i].value
+            if p_top > c_top:
+                print('same hand, player won')
+                return 0
+            elif p_top < c_top:
+                print('same hand, cpu won')
+                return 1
+            else:
+                print('same hand, split pot')
+                return 2
+    elif p_rank > c_rank:
+        print('player won')
         return 0
+    else:
+        print('cpu won')
+        return 1
         
 
 # Decion-making AI function. Runs after each turn is ended by the player.
@@ -179,13 +194,10 @@ def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
 # Post: the function will decide whether to fold, match the user's bet, or match and raise above the bet.
 #       function will return -1 if deciding to fold
 #       function will return 0 if deciding to match the bet
-#       otherwise, the function will return a number indicating how much to raise above the player's bet
+#       otherwise, the function will return a number indicating how much to raise above the player's bet.
 def makeComputerDecision(p_cards, c_cards, c_bet):
     p_hand = checkAllHands(p_cards)
     c_hand = checkAllHands(c_cards)
-
-    # Using strings for the return type of checkHand().
-    # Can change later, just starting basic logic.
 
     # Fold if player has bet more than allowed by the cpu (might change later)
     # if p_bet >= CPU_MAX_BET_AMOUNT:
@@ -209,9 +221,11 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
             # Try to change to triple
             if c_cards[0].value == c_cards[1].value:
                 c_cards[2].value == c_cards[1].value
+                return determineRaiseAmount(c_bet)
             # Try to change to flush
             elif c_cards[0].suit == c_cards[1].suit:
                 c_cards[2].suit == c_cards[1].suit
+                return determineRaiseAmount(c_bet)
             # If cheating is not possible, match user's bet
             else: return 0
         # If CPU has a better hand, raise above user's bet
@@ -230,10 +244,11 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
                 return 0
             # Fold if discreet cheating is not possible
             else: return -1
-        elif c_hand == "pair" or c_hand == "flush":
+        elif c_hand == "pair":
             # If the two face up cards are a pair, change the third to make a triple
             if c_cards[0].value == c_cards[1].value:
                 c_cards[2].value == c_cards[1].value
+                return determineRaiseAmount(c_bet)
         elif c_hand == "flush":
             # Check if hand can be made sequential (try to straight-flush)
             if c_cards[0].value == c_cards[1].value-1:
@@ -460,7 +475,7 @@ def main():
                         # Check if fold button was clicked
                         if 728 <= pos[0] <= 798 and 460 <= pos[1] <= 500:
                             winner = checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
-                            winner = 0 # REMOVE LATER
+                            print('win value: ' + str(winner))
                             turnEnded = True
                             bet_raise = '+$ '
                             if winner == 0:
@@ -469,18 +484,23 @@ def main():
                             elif winner == 1:
                                 win_msg == 'CPU won. Deal again?'
                                 cpu_winnings += cpu_bet
+                            else:
+                                win_msg == 'Tie, split pot. Deal again?'
+                                player_winnings += player_bet
+                                cpu_winnings += cpu_bet
                         # Check if bet button was clicked; if so, run AI decisionmaking
                         if 700 <= pos[0] <= 830 and 330 <= pos[1] <= 370 and turnEnded == False and len(bet_raise) > 3:
                             player_bet += int(bet_raise[3:])
                             bet_raise = '+$ '
                             decision = makeComputerDecision(player_cards, cpu_cards, cpu_bet)
+                            refreshImages(player_cards, cpu_cards, player_sprites, cpu_sprites)
 
                             # Change bet and conditions based on what decision was made.
                             print('decision: ' + str(decision))
                             if decision == -1:
                                 turnEnded = True
                                 game_status = 'CPU folded.'
-                            if decision == 0:
+                            elif decision == 0:
                                 cpu_bet = player_bet
                                 game_status = 'CPU matched your bet.'
                             else:
