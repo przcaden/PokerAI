@@ -16,9 +16,6 @@ CARD_HEIGHT = 150
 
 CPU_MAX_BET_AMOUNT = 5000
 
-##counters
-pair_or_triple_count = 0
-
 
 # Card class has a value/face, suit, and can be face down
 class Card:
@@ -91,46 +88,47 @@ def loadImage(card):
 
 
 def check_pair_or_triple(cards):
-    #loop through the different hands 
-    for i in range(3):
-        if cards[i].value == cards[i+1].value:
-            # we will then count the number of values present
-            pair_or_triple_count += 1
-
-    return pair_or_triple_count
- 
-
-def check_straight(card_value_list):
-    #straights exist when all the cards have adjacent ranks. 
+    #loop through the different hands
     count = 0
-    for rank in (14, *range (2 , 15)):
-        if rank in card_value_list: 
-            count +=1
-            if count == 3:
-                return True
+    if cards[0].value == cards[1].value or cards[2].value == cards[1].value or cards[0].value == cards[2].value:
+        count = 2
+    elif cards[0].value == cards[1].value and cards[1].value == cards[2].value:
+        count = 3
 
-        else:
-            return False
+    return count
+
+def check_straight(cards):
+    #straights exist when all the cards have adjacent ranks. 
+    # count = 0
+    # for rank in (14, *range (2 , 15)):
+    #     if rank in cards: 
+    #         count +=1
+    #         if count == 3:
+    #             return True
+    #     else:
+    #         return False
+    if cards[0].value > cards[1].value > cards[2].value:
+        return True
+    elif cards[0].value < cards[1].value < cards[2].value:
+        return True
+    else: return False
 
 
 def check_flush(cards):
     # a flush exists when all the cards are in the same suit
-    for i in range(3):
-        if cards[i].suit == cards[i+1]. suit:
-            return True
-        return False
+    if cards[0].suit == cards[1].suit and cards[1].suit == cards[2].suit:
+        return True
+    else: return False
 
 
 #dhecks all the  hands the user or computer has
 def checkAllHands(cards):
-
-
     # when  a pair exists
-    if pair_or_triple_count == 2:
+    if check_pair_or_triple(cards) == 2:
         return "pair"
     
     # when there is a triple
-    elif pair_or_triple_count == 3:
+    elif check_pair_or_triple(cards) == 3:
         return "triple"
 
     # when there is a flush
@@ -142,19 +140,21 @@ def checkAllHands(cards):
         return "straight"
 
      #when it is a straight-flush.
-    elif check_straight and check_flush:
+    elif check_straight(cards) == True and check_flush(cards) == True:
         return "straight-flush"
+    
+    else: return "none"
 
 
 #checkrank of hands
 def checkCardRanks(cards):
      # create a dictionary that has all the possible hands with their ranks
-    poker_ranks = {"pair": 5, "flush": 4, "straight": 3, "triple": 2, "straight-flush": 1 }
+    poker_ranks = {"pair": 5, "flush": 4, "straight": 3, "triple": 2, "straight-flush": 1, "none": 0 }
     #we will then get hands and compare
     for key, value in poker_ranks.items():
         #if the hand is the same as the key, then we want to return the ranks
         if checkAllHands(cards) == key:
-            print('this is the rank', value)
+            # print('this is the rank', value)
             return value
 
 
@@ -190,11 +190,15 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
     # Fold if player has bet more than allowed by the cpu (might change later)
     # if p_bet >= CPU_MAX_BET_AMOUNT:
     #     return -1
-    print(p_hand)
-    print(c_hand)
+    print('player hand: ' + p_hand)
+    print('cpu hand: ' + c_hand)
     # Decision making for when the player has a pair.
+    if p_hand == "none":
+        if c_hand == "none":
+            c_cards[2].value = c_cards[0].value
+            return determineRaiseAmount(c_bet)
+        else: return determineRaiseAmount(c_bet)
     if p_hand == "pair":
-        print('p')
         # If the CPU has a worse hand, change its face down card
         if c_hand == "none":
             if c_cards[0].value > c_cards[1].value:
@@ -215,7 +219,6 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
 
     # Make decision for when the player has a flush.
     elif p_hand == "flush":
-        print('flu')
         # Check if the computer has a worse hand (cheat)
         if c_hand == "none":
             # Change computer's hand to a flush if possible
@@ -250,7 +253,6 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
 
     # Make decision for when the player has a straight.
     elif p_hand == "straight":
-        print('str')
         if c_hand == "pair":
             # Try to change to triple
             if c_cards[0].value == c_cards[1].value:
@@ -272,7 +274,6 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
 
     # Make decision for when the player has a triple.
     elif p_hand == "triple":
-        print('trip')
         if c_hand == "straight-flush":
             return determineRaiseAmount(c_bet)
         elif c_hand == "triple":
@@ -281,11 +282,9 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
 
     # Make decision for when the player has a straight-flush.
     elif p_hand == "straight-flush":
-        print('sf')
         if c_hand == "straight-flush":
             return 0
         else: return -1
-    print('hi')
 
 # Determine how much the CPU should raise above player's bet
 def determineRaiseAmount(c_bet):
@@ -477,6 +476,7 @@ def main():
                             decision = makeComputerDecision(player_cards, cpu_cards, cpu_bet)
 
                             # Change bet and conditions based on what decision was made.
+                            print('decision: ' + str(decision))
                             if decision == -1:
                                 turnEnded = True
                                 game_status = 'CPU folded.'
