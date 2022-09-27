@@ -1,5 +1,3 @@
-
-
 import os
 import random
 import pygame
@@ -18,9 +16,15 @@ CARD_HEIGHT = 150
 
 CPU_MAX_BET_AMOUNT = 5000
 
+##counters
+pair_or_triple_count = 0
+
+
 # Card class has a value/face, suit, and can be face down
 class Card:
+    _cards = []
     def __init__(self, value, suit, visible, face):
+        self._cards.append(self);
         self.suit = suit
         self.value = value
         self.face = face
@@ -85,7 +89,76 @@ def loadImage(card):
     img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
     return img
 
-##checks winners
+
+def check_pair_or_triple(cards):
+    #loop through the different hands 
+    for i in range(3):
+        if cards[i].value == cards[i+1].value:
+            # we will then count the number of values present
+            pair_or_triple_count += 1
+
+    return pair_or_triple_count
+ 
+
+def check_straight(card_value_list):
+    #straights exist when all the cards have adjacent ranks. 
+    count = 0
+    for rank in (14, *range (2 , 15)):
+        if rank in card_value_list: 
+            count +=1
+            if count == 3:
+                return True
+
+        else:
+            return False
+
+
+def check_flush(cards):
+    # a flush exists when all the cards are in the same suit
+    for i in range(3):
+        if cards[i].suit == cards[i+1]. suit:
+            return True
+        return False
+
+
+#dhecks all the  hands the user or computer has
+def checkAllHands(cards):
+
+
+    # when  a pair exists
+    if pair_or_triple_count == 2:
+        return "pair"
+    
+    # when there is a triple
+    elif pair_or_triple_count == 3:
+        return "triple"
+
+    # when there is a flush
+    elif check_flush(cards) == True:
+        return "flush"
+
+    #when there is a straight
+    elif check_straight(cards) == True:
+        return "straight"
+
+     #when it is a straight-flush.
+    elif check_straight and check_flush:
+        return "straight-flush"
+
+
+#checkrank of hands
+def checkCardRanks(cards):
+     # create a dictionary that has all the possible hands with their ranks
+    poker_ranks = {"pair": 5, "flush": 4, "straight": 3, "triple": 2, "straight-flush": 1 }
+    #we will then get hands and compare
+    for key, value in poker_ranks.items():
+        #if the hand is the same as the key, then we want to return the ranks
+        if checkAllHands(cards) == key:
+            print('this is the rank', value)
+            return value
+
+
+#checks winners
 def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
     # we will first display the last card in both the computer and c- cards
     p_cards[2].visible = True 
@@ -94,12 +167,12 @@ def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
     c_cards[2].visible = True  #make all cards visible?
     c_sprites[2] = loadImage(c_cards[2])
 
-    # TO-DO
-    # we are  then going to check the cards and determine who's the winner
-    # what are the conditions for when someone wins? 
-    # have a rank based on the cards that they have
-    # we will then display who the winner is.
-
+    #check rank of computer and user hands and determine the winner
+    if checkCardRanks(c_cards) > checkCardRanks(p_cards):
+        print("The computer wins!")
+    else: 
+        print("Congratulations you win! you have beat the computer!")
+        
 
 # Decion-making AI function. Runs after each turn is ended by the player.
 # Pre: user has decided to raise their bet for their turn
@@ -108,8 +181,8 @@ def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
 #       function will return 0 if deciding to match the bet
 #       otherwise, the function will return a number indicating how much to raise above the player's bet
 def makeComputerDecision(p_cards, c_cards, p_bet, c_bet):
-    p_hand = checkHand(p_cards)
-    c_hand = checkHand(c_cards)
+    p_hand = checkAllHands(p_cards)
+    c_hand = checkAllHands(c_cards)
 
     # Using strings for the return type of checkHand().
     # Can change later, just starting basic logic.
