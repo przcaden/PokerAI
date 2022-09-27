@@ -87,7 +87,7 @@ def loadImage(card):
     return img
 
 def refreshImages(p_cards, c_cards, p_sprites, c_sprites):
-    for i in range(2):
+    for i in range(3):
         p_sprites[i] = loadImage(p_cards[i])
         c_sprites[i] = loadImage(c_cards[i])
 
@@ -482,10 +482,10 @@ def main():
                                 win_msg = 'You won! Deal again?'
                                 player_winnings += player_bet
                             elif winner == 1:
-                                win_msg == 'CPU won. Deal again?'
+                                win_msg = 'CPU won. Deal again?'
                                 cpu_winnings += cpu_bet
                             else:
-                                win_msg == 'Tie, split pot. Deal again?'
+                                win_msg = 'Tie, split pot. Deal again?'
                                 player_winnings += player_bet
                                 cpu_winnings += cpu_bet
                         # Check if bet button was clicked; if so, run AI decisionmaking
@@ -500,6 +500,20 @@ def main():
                             if decision == -1:
                                 turnEnded = True
                                 game_status = 'CPU folded.'
+                                winner = checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
+                                print('win value: ' + str(winner))
+                                turnEnded = True
+                                bet_raise = '+$ '
+                                if winner == 0:
+                                    win_msg = 'You won! Deal again?'
+                                    player_winnings += player_bet
+                                elif winner == 1:
+                                    win_msg = 'CPU won. Deal again?'
+                                    cpu_winnings += cpu_bet
+                                else:
+                                    win_msg = 'Tie, split pot. Deal again?'
+                                    player_winnings += player_bet
+                                    cpu_winnings += cpu_bet
                             elif decision == 0:
                                 cpu_bet = player_bet
                                 game_status = 'CPU matched your bet.'
