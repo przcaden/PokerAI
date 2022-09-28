@@ -14,14 +14,32 @@ import time
 CARD_WIDTH = 100
 CARD_HEIGHT = 150
 
+# Declare AI decisionmaking variables
 CPU_MAX_BET_AMOUNT = 5000
+CPU_MAX_WIN_RATIO = 0.85
 
+# Initialize GUI window
+pygame.init()
+pygame.display.set_caption("Poker")
+win = pygame.display.set_mode((1000, 600))
+FPS = 60
+
+# Initialize fonts, labels, etc.
+font = pygame.font.Font(None, 32)
+smallfont = pygame.font.Font(None, 24)
+mainlabel = font.render('Welcome to a completely fair game of Poker', True, (255,255,255))
+secondlabel = font.render('Type a bet to begin', True, (255,255,255))
+start_label = font.render('Bet', True, (255,255,255))
+player_cards_label = font.render('Player\'s Cards', True, (255,255,255))
+cpu_cards_label = font.render('Computer\'s Cards', True, (255,255,255))
+bet_label = font.render('Raise Bet', True, (255,255,255))
+fold_label = font.render('Fold', True, (255,255,255))
+yes_label = font.render('Yes', True, (255,255,255))
+no_label = font.render('No', True, (255,255,255))
 
 # Card class has a value/face, suit, and can be face down
 class Card:
-    _cards = []
     def __init__(self, value, suit, visible, face):
-        self._cards.append(self);
         self.suit = suit
         self.value = value
         self.face = face
@@ -86,8 +104,9 @@ def loadImage(card):
     img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
     return img
 
+# Match card objects to their respective images
 def refreshImages(p_cards, c_cards, p_sprites, c_sprites):
-    for i in range(2):
+    for i in range(3):
         p_sprites[i] = loadImage(p_cards[i])
         c_sprites[i] = loadImage(c_cards[i])
 
@@ -188,6 +207,17 @@ def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
         print('cpu won')
         return 1
         
+def fixFace(card):
+    if card.value <= 10:
+        card.face = str(card.value)
+    if card.value == 11:
+        card.face = "jack"
+    if card.value == 12:
+        card.face = "queen"
+    if card.value == 13:
+        card.face = "king"
+    if card.value == 14:
+        card.face = "ace"
 
 # Decion-making AI function. Runs after each turn is ended by the player.
 # Pre: user has decided to raise their bet for their turn
@@ -195,39 +225,70 @@ def checkWinners(p_cards, c_cards, p_sprites, c_sprites):
 #       function will return -1 if deciding to fold
 #       function will return 0 if deciding to match the bet
 #       otherwise, the function will return a number indicating how much to raise above the player's bet.
-def makeComputerDecision(p_cards, c_cards, c_bet):
+def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
     p_hand = checkAllHands(p_cards)
     c_hand = checkAllHands(c_cards)
 
-    # Fold if player has bet more than allowed by the cpu (might change later)
-    # if p_bet >= CPU_MAX_BET_AMOUNT:
-    #     return -1
+    # Fold if cpu has won more games than the allowed ratio
+    if games_played > 3:
+        if checkCardRanks(p_cards) >= checkCardRanks(c_cards) and cpu_win_amount/games_played >= CPU_MAX_WIN_RATIO:
+            print('Automatically folding...')
+            cpu_win_amount = 0
+            return -1
+
     print('player hand: ' + p_hand)
     print('cpu hand: ' + c_hand)
     # Decision making for when the player has a pair.
     if p_hand == "none":
         if c_hand == "none":
-            c_cards[2].value = c_cards[0].value
-            return determineRaiseAmount(c_bet)
+            if c_cards[0].value > c_cards[1].value:
+                c_cards[2].value = c_cards[0].value
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+                return determineRaiseAmount(c_bet)
+            else:
+                c_cards[2].value = c_cards[1].value
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+                return determineRaiseAmount(c_bet)
         else: return determineRaiseAmount(c_bet)
+    
     if p_hand == "pair":
         # If the CPU has a worse hand, change its face down card
         if c_hand == "none":
             if c_cards[0].value > c_cards[1].value:
                 c_cards[2].value = c_cards[0].value
-            else: c_cards[2].value = c_cards[1].value
-            return 0
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+                return determineRaiseAmount(c_bet)
+            else:
+                c_cards[2].value = c_cards[1].value
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+                return determineRaiseAmount(c_bet)
         if c_hand == "pair":
             # Try to change to triple
             if c_cards[0].value == c_cards[1].value:
-                c_cards[2].value == c_cards[1].value
+                c_cards[2].value = c_cards[1].value
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return determineRaiseAmount(c_bet)
             # Try to change to flush
             elif c_cards[0].suit == c_cards[1].suit:
-                c_cards[2].suit == c_cards[1].suit
+                c_cards[2].suit = c_cards[1].suit
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return determineRaiseAmount(c_bet)
-            # If cheating is not possible, match user's bet
-            else: return 0
+            # If better hand not possible, remove user's pair discreetly, otherwise match bet
+            else:
+                if p_cards[0].value == p_cards[2].value or p_cards[1].value == p_cards[2].value:
+                    if p_cards[2].value > 2:
+                        p_cards[2].value -= 1
+                    else: p_cards[2].value += 1
+                    fixFace(p_cards[2])
+                    print('Altered player\'s deck')
+                    return determineRaiseAmount(c_bet)
+                else: return 0
         # If CPU has a better hand, raise above user's bet
         else: return determineRaiseAmount(c_bet)
 
@@ -238,28 +299,53 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
             # Change computer's hand to a flush if possible
             if c_cards[0].value == c_cards[1].value-1:
                 c_cards[2].value = c_cards[1].value+1
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return 0
             elif c_cards[0].value == c_cards[1].value+1:
                 c_cards[2].value = c_cards[1].value-1
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return 0
             # Fold if discreet cheating is not possible
             else: return -1
         elif c_hand == "pair":
             # If the two face up cards are a pair, change the third to make a triple
             if c_cards[0].value == c_cards[1].value:
-                c_cards[2].value == c_cards[1].value
+                c_cards[2].value = c_cards[1].value
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+                return determineRaiseAmount(c_bet)
+            # If better hand isn't possible, get rid of player's flush
+            else:
+                if p_cards[2].suit == "clubs":
+                    p_cards[2].suit = "diamonds"
+                if p_cards[2].suit == "diamonds":
+                    p_cards[2].suit = "clubs"
+                if p_cards[2].suit == "hearts":
+                    p_cards[2].suit = "spades"
+                if p_cards[2].suit == "spades":
+                    p_cards[2].suit = "hearts"
+                fixFace(p_cards[2])
+                print('Altered player\'s deck')
                 return determineRaiseAmount(c_bet)
         elif c_hand == "flush":
-            # Check if hand can be made sequential (try to straight-flush)
+            # Check if hand can be made sequential (try to get straight-flush)
             if c_cards[0].value == c_cards[1].value-1:
                 c_cards[2].value = c_cards[1].value+1
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return determineRaiseAmount(c_bet)
             elif c_cards[0].value == c_cards[1].value+1:
                 c_cards[2].value = c_cards[1].value-1
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return determineRaiseAmount(c_bet)
             # Check if hand can be made into triple
             elif c_cards[0].value == c_cards[1].value:
-                c_cards[2].value == c_cards[1].value
+                c_cards[2].value = c_cards[1].value
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return determineRaiseAmount(c_bet)
             # Match user's raise if cheating is not possible
             else: return 0
@@ -268,22 +354,44 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
 
     # Make decision for when the player has a straight.
     elif p_hand == "straight":
+        # Make player's hand worse
+        p_cards[2].value = p_cards[1].value
+        fixFace(p_cards[2])
+        print('Altered player\'s deck')
+
+        if c_hand == "none":
+            # Try to change to straight or straight-flush
+            if c_cards[0].value < c_cards[1].value and c_cards[1].value is not 14:
+                c_cards[2].value = c_cards[1].value+1
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+                return determineRaiseAmount(c_bet)
+            elif c_cards[0].value > c_cards[1].value and c_cards[1].value is not 2:
+                c_cards[2].value = c_cards[1].value-1
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+                return determineRaiseAmount(c_bet)
+            else: return 0
         if c_hand == "pair":
             # Try to change to triple
             if c_cards[0].value == c_cards[1].value:
-                c_cards[2].value == c_cards[1].value
+                c_cards[2].value = c_cards[1].value
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return determineRaiseAmount(c_bet)
-            else: return -1
+            else: return 0
         elif c_hand == "flush":
             # Try to get straight-flush
-            if c_cards[0].value == c_cards[1].value-1:
+            if c_cards[0].value < c_cards[1].value and c_cards[1].value is not 14:
                 c_cards[2].value = c_cards[1].value+1
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
                 return determineRaiseAmount(c_bet)
-            else: return -1
-        elif c_hand == "straight":
-            # Try to get straight-flush
-            if c_cards[0].suit == c_cards[1].suit:
-                c_cards[2].suit == c_cards[1].suit
+            elif c_cards[0].value > c_cards[1].value and c_cards[1].value is not 2:
+                c_cards[2].value = c_cards[1].value-1
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+                return determineRaiseAmount(c_bet)
             else: return 0
         else: return determineRaiseAmount(c_bet)
 
@@ -297,8 +405,11 @@ def makeComputerDecision(p_cards, c_cards, c_bet):
 
     # Make decision for when the player has a straight-flush.
     elif p_hand == "straight-flush":
-        if c_hand == "straight-flush":
-            return 0
+        # Turn player's hand into just a flush, if advantageous.
+        if c_hand == "straight-flush" or c_hand == "straight" or c_hand == "triple":
+            p_cards[2].value = p_cards[1].value
+            fixFace(p_cards[2])
+            return determineRaiseAmount(c_bet)
         else: return -1
 
 # Determine how much the CPU should raise above player's bet
@@ -320,31 +431,16 @@ def getCardSprites(p_cards, c_cards):
         c_sprites.append(img)
     return p_sprites, c_sprites
 
-# Initialize GUI window
-pygame.init()
-pygame.display.set_caption("Poker")
-win = pygame.display.set_mode((1000, 600))
-FPS = 60
-
-# Initialize fonts, labels, etc.
-font = pygame.font.Font(None, 32)
-smallfont = pygame.font.Font(None, 24)
-mainlabel = font.render('Welcome to a completely fair game of Poker', True, (255,255,255))
-secondlabel = font.render('Type a bet to begin', True, (255,255,255))
-start_label = font.render('Bet', True, (255,255,255))
-player_cards_label = font.render('Player\'s Cards', True, (255,255,255))
-cpu_cards_label = font.render('Computer\'s Cards', True, (255,255,255))
-bet_label = font.render('Raise Bet', True, (255,255,255))
-fold_label = font.render('Fold', True, (255,255,255))
-yes_label = font.render('Yes', True, (255,255,255))
-no_label = font.render('No', True, (255,255,255))
-
 # Main game function. Displays all GUI components and runs game logic functions.
 def main():
     clock = pygame.time.Clock()
     run = False
     begin = True
     bet_input = '$ '
+    games_played = 0
+    cpu_win_amount = 0
+    player_winnings = 0
+    cpu_winnings = 0
 
     # Create a list of all possible suit/face values based on cards.txt
     card_value_list = [[]]
@@ -387,11 +483,10 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE and len(bet_input) > 2:
                     bet_input = bet_input[:-1]
-                elif len(bet_input)<8 and event.unicode.isnumeric():
+                elif len(bet_input)<6 and event.unicode.isnumeric():
                     bet_input += event.unicode
-
-    player_winnings = 0
-    cpu_winnings = 0
+                    if int(bet_input[2:]) > 1000:
+                        bet_input = '$ 1000'
 
     # If game has started, run the else block
     while run:
@@ -475,31 +570,47 @@ def main():
                         # Check if fold button was clicked
                         if 728 <= pos[0] <= 798 and 460 <= pos[1] <= 500:
                             winner = checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
-                            print('win value: ' + str(winner))
                             turnEnded = True
                             bet_raise = '+$ '
                             if winner == 0:
                                 win_msg = 'You won! Deal again?'
                                 player_winnings += player_bet
                             elif winner == 1:
-                                win_msg == 'CPU won. Deal again?'
+                                win_msg = 'CPU won. Deal again?'
                                 cpu_winnings += cpu_bet
+                                cpu_win_amount += 1
                             else:
-                                win_msg == 'Tie, split pot. Deal again?'
+                                win_msg = 'Tie, split pot. Deal again?'
                                 player_winnings += player_bet
                                 cpu_winnings += cpu_bet
+                            games_played += 1
                         # Check if bet button was clicked; if so, run AI decisionmaking
                         if 700 <= pos[0] <= 830 and 330 <= pos[1] <= 370 and turnEnded == False and len(bet_raise) > 3:
                             player_bet += int(bet_raise[3:])
                             bet_raise = '+$ '
-                            decision = makeComputerDecision(player_cards, cpu_cards, cpu_bet)
+                            decision = makeComputerDecision(player_cards, cpu_cards, cpu_bet, cpu_win_amount, games_played)
                             refreshImages(player_cards, cpu_cards, player_sprites, cpu_sprites)
 
                             # Change bet and conditions based on what decision was made.
-                            print('decision: ' + str(decision))
                             if decision == -1:
                                 turnEnded = True
                                 game_status = 'CPU folded.'
+                                winner = checkWinners(player_cards, cpu_cards, player_sprites, cpu_sprites)
+                                print('win value: ' + str(winner))
+                                turnEnded = True
+                                bet_raise = '+$ '
+                                if winner == 0:
+                                    win_msg = 'You won! Deal again?'
+                                    player_winnings += player_bet
+                                elif winner == 1:
+                                    win_msg = 'CPU won. Deal again?'
+                                    cpu_winnings += cpu_bet
+                                    cpu_win_amount += 1
+                                else:
+                                    win_msg = 'Tie, split pot. Deal again?'
+                                    player_winnings += player_bet
+                                    cpu_winnings += cpu_bet
+                                games_played += 1
                             elif decision == 0:
                                 cpu_bet = player_bet
                                 game_status = 'CPU matched your bet.'
@@ -520,8 +631,10 @@ def main():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE and len(bet_raise) > 3:
                         bet_raise = bet_raise[:-1]
-                    elif len(bet_raise) < 8 and event.unicode.isnumeric() and turnEnded == False:
+                    elif len(bet_raise) < 7 and event.unicode.isnumeric() and turnEnded == False:
                         bet_raise += event.unicode
+                        if int(bet_raise[3:]) > 1000:
+                            bet_raise = '+$ 1000'
                 # Check if player closed the game
                 if event.type == pygame.QUIT:
                     pygame.quit()
