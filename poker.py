@@ -4,6 +4,8 @@
 #                                    Caden Perez and Celine Ogero                                      #
 #        Assumptions:                                                                                  #
 #   - When the player and CPU have matching hands, the hand with the highest valued card wins.         #
+#   - When both the player and CPU have matching hands, and their highest-valued cards are the         #
+#       same, then the pot will be split between the two of them.                                      #
 #   - All cards will be dealt from a deck of 52 cards, which will return to the deck afterward.        #
 #   - There will be a minimum buy-in of $10 and maximum buy-in of $1000.                               #
 #   - There will be a maximum bet raise of $100.                                                       #
