@@ -309,19 +309,30 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
     elif p_hand == "flush":
         # Check if the computer has a worse hand (cheat)
         if c_hand == "none":
+            # Remove the player's flush
+            if p_cards[2].suit == "clubs":
+                p_cards[2].suit = "diamonds"
+            if p_cards[2].suit == "diamonds":
+                p_cards[2].suit = "clubs"
+            if p_cards[2].suit == "hearts":
+                p_cards[2].suit = "spades"
+            if p_cards[2].suit == "spades":
+                p_cards[2].suit = "hearts"
+            fixFace(p_cards[2])
+            print('Altered player\'s deck')
             # Change computer's hand to a flush if possible
             if c_cards[0].value == c_cards[1].value-1:
                 c_cards[2].value = c_cards[1].value+1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
-                return 0
+                return CPU_RAISE_AMOUNT
             elif c_cards[0].value == c_cards[1].value+1:
                 c_cards[2].value = c_cards[1].value-1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
-                return 0
+                return CPU_RAISE_AMOUNT
             # Fold if discreet cheating is not possible
-            else: return -1
+            else: return 0
         elif c_hand == "pair":
             # If the two face up cards are a pair, change the third to make a triple
             if c_cards[0].value == c_cards[1].value:
@@ -360,32 +371,48 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
                 return CPU_RAISE_AMOUNT
-            # Match user's raise if cheating is not possible
-            else: return 0
+            # Remove user's flush if improving CPU's hand isn't possible
+            else:
+                if p_cards[2].suit == "clubs":
+                    p_cards[2].suit = "diamonds"
+                if p_cards[2].suit == "diamonds":
+                    p_cards[2].suit = "clubs"
+                if p_cards[2].suit == "hearts":
+                    p_cards[2].suit = "spades"
+                if p_cards[2].suit == "spades":
+                    p_cards[2].suit = "hearts"
+                fixFace(p_cards[2])
+                print('Altered player\'s deck')
+                return CPU_RAISE_AMOUNT
         # If computer has a better hand, raise above player's bet
         else: return CPU_RAISE_AMOUNT
 
     # Make a decision for when the player has a straight.
     elif p_hand == "straight":
-        # Make player's hand worse
-        p_cards[2].value = p_cards[1].value
-        fixFace(p_cards[2])
-        print('Altered player\'s deck')
-
         # Make decisions based on if the player has no hand
         if c_hand == "none":
             # Try to change to straight or straight-flush
-            if c_cards[0].value < c_cards[1].value and c_cards[1].value is not 14:
+            if c_cards[0].value < c_cards[1].value and c_cards[1].value != 14:
                 c_cards[2].value = c_cards[1].value+1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
+
+                # Make player's hand worse
+                p_cards[2].value = p_cards[1].value
+                fixFace(p_cards[2])
+                print('Altered player\'s deck')
                 return CPU_RAISE_AMOUNT
-            elif c_cards[0].value > c_cards[1].value and c_cards[1].value is not 2:
+            elif c_cards[0].value > c_cards[1].value and c_cards[1].value != 2:
                 c_cards[2].value = c_cards[1].value-1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
+
+                # Make player's hand worse
+                p_cards[2].value = p_cards[1].value
+                fixFace(p_cards[2])
+                print('Altered player\'s deck')
                 return CPU_RAISE_AMOUNT
-            else: return 0
+            else: return -1
 
         if c_hand == "pair":
             # Try to change to triple
@@ -394,7 +421,12 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
                 return CPU_RAISE_AMOUNT
-            else: return 0
+            else:
+                # Make player's hand worse
+                p_cards[2].value = p_cards[1].value
+                fixFace(p_cards[2])
+                print('Altered player\'s deck')
+                return 0
         elif c_hand == "flush":
             # Try to get straight-flush
             if c_cards[0].value < c_cards[1].value and c_cards[1].value is not 14:
@@ -407,22 +439,59 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
                 return CPU_RAISE_AMOUNT
-            else: return 0
+            else:
+                # Make player's hand worse
+                p_cards[2].value = p_cards[1].value
+                fixFace(p_cards[2])
+                print('Altered player\'s deck')
+                return CPU_RAISE_AMOUNT
+        elif c_hand == "straight":
+            # Make player's hand worse
+            p_cards[2].value = p_cards[1].value
+            fixFace(p_cards[2])
+            print('Altered player\'s deck')
+            return CPU_RAISE_AMOUNT
         else: return CPU_RAISE_AMOUNT
 
     # Make a decision for when the player has a triple.
     elif p_hand == "triple":
-        if c_hand == "straight-flush":
-            return CPU_RAISE_AMOUNT
-        elif c_hand == "triple":
+        if c_hand == "none":
             # Remove player's triple
             if p_cards[2].value > 2:
                 p_cards[2].value -= 1
             else:
                 p_cards[2].value += 1
             fixFace(c_cards[2])
+
+            # Change computer's hand to pair
+            if c_cards[0].value > c_cards[1].value:
+                c_cards[2].value = c_cards[0].value
+            else:
+                c_cards[2].value = c_cards[1].value
+            fixFace(c_cards[2])
+            print('Altered CPU\'s deck')
             return CPU_RAISE_AMOUNT
-        else: return -1
+        if c_hand == "pair":
+            # Make player's hand worse
+            if p_cards[2].value > 2:
+                p_cards[2].value -= 1
+            else:
+                p_cards[2].value += 1
+            print('Altered player\'s deck')
+            # Try to change to triple
+            if c_cards[0].value == c_cards[1].value:
+                c_cards[2].value = c_cards[1].value
+                fixFace(c_cards[2])
+                print('Altered CPU\'s deck')
+            return CPU_RAISE_AMOUNT
+        else:
+            # Make player's hand worse
+            if p_cards[2].value > 2:
+                p_cards[2].value -= 1
+            else:
+                p_cards[2].value += 1
+            fixFace(c_cards[2])
+            return CPU_RAISE_AMOUNT
 
     # Make a decision for when the player has a straight-flush.
     elif p_hand == "straight-flush":
@@ -449,7 +518,7 @@ def getCardSprites(p_cards, c_cards):
 
 # Main game function. Displays all GUI components and runs game logic functions.
 def main():
-    
+
     # Initialize essential game variables to be used later
     clock = pygame.time.Clock()
     run = False
