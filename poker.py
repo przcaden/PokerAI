@@ -28,7 +28,7 @@ FPS = 60
 font = pygame.font.Font(None, 32)
 smallfont = pygame.font.Font(None, 24)
 mainlabel = font.render('Welcome to a completely fair game of Poker', True, (255,255,255))
-secondlabel = font.render('Type a bet to begin', True, (255,255,255))
+secondlabel = font.render('Type a bet to begin. (Max =$1000, Min = $10)', True, (255,255,255))
 start_label = font.render('Bet', True, (255,255,255))
 player_cards_label = font.render('Player\'s Cards', True, (255,255,255))
 cpu_cards_label = font.render('Computer\'s Cards', True, (255,255,255))
@@ -459,7 +459,7 @@ def main():
         
         # Display labels
         win.blit(mainlabel, (290, 250))
-        win.blit(secondlabel, (400, 300))
+        win.blit(secondlabel, (285, 300))
         pygame.draw.rect(win, pygame.Color('green'), pygame.Rect(468, 380, 70, 40))
         pygame.draw.rect(win, pygame.Color('white'), pygame.Rect(431, 450, 140, 40))
         bet_surface = font.render(bet_input, True, (0,0,0))
