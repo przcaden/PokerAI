@@ -4,6 +4,8 @@
 #                                    Caden Perez and Celine Ogero                                      #
 #        Assumptions:                                                                                  #
 #   - When the player and CPU have matching hands, the hand with the highest valued card wins.         #
+#   - When both the player and CPU have matching hands, and their highest-valued cards are the         #
+#       same, then the pot will be split between the two of them.                                      #
 #   - All cards will be dealt from a deck of 52 cards, which will return to the deck afterward.        #
 #   - There will be a minimum buy-in of $10 and maximum buy-in of $1000.                               #
 #   - There will be a maximum bet raise of $100.                                                       #
@@ -163,7 +165,9 @@ def checkAllHands(cards):
     else: return "none"
 
 
-#checkrank of hands
+# Determine the "rank" of a given hand.
+# Pre: cards list has been populated
+# Post: an integer value of the rank of the hand is generated.
 def checkCardRanks(cards):
      # create a dictionary that has all the possible hands with their ranks
     poker_ranks = { "none": 0, "pair": 1, "flush": 2, "straight": 3, "triple": 4, "straight-flush": 5 }
@@ -429,8 +433,9 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
             return CPU_RAISE_AMOUNT
         else: return -1
 
-# Generate lists of sprites for each player card and computer card.
-# Indexes are in the same order.
+# Generate lists of sprites for each player card and computer card. Indexes are in the same order.
+# Pre: both player and CPU card lists have been populated
+# Post: respective lists of sprites for the cards are generated
 def getCardSprites(p_cards, c_cards):
     p_sprites = []
     c_sprites = []
@@ -444,6 +449,8 @@ def getCardSprites(p_cards, c_cards):
 
 # Main game function. Displays all GUI components and runs game logic functions.
 def main():
+    
+    # Initialize essential game variables to be used later
     clock = pygame.time.Clock()
     run = False
     begin = True
