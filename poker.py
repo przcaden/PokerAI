@@ -371,12 +371,12 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
         # Make decisions based on if the player has no hand
         if c_hand == "none":
             # Try to change to straight or straight-flush
-            if c_cards[0].value < c_cards[1].value and c_cards[1].value is not 14:
+            if c_cards[0].value < c_cards[1].value and c_cards[1].value != 14:
                 c_cards[2].value = c_cards[1].value+1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
                 return CPU_RAISE_AMOUNT
-            elif c_cards[0].value > c_cards[1].value and c_cards[1].value is not 2:
+            elif c_cards[0].value > c_cards[1].value and c_cards[1].value != 2:
                 c_cards[2].value = c_cards[1].value-1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
@@ -393,12 +393,12 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
             else: return 0
         elif c_hand == "flush":
             # Try to get straight-flush
-            if c_cards[0].value < c_cards[1].value and c_cards[1].value is not 14:
+            if c_cards[0].value < c_cards[1].value and c_cards[1].value != 14:
                 c_cards[2].value = c_cards[1].value+1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
                 return CPU_RAISE_AMOUNT
-            elif c_cards[0].value > c_cards[1].value and c_cards[1].value is not 2:
+            elif c_cards[0].value > c_cards[1].value and c_cards[1].value !=  2:
                 c_cards[2].value = c_cards[1].value-1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
