@@ -240,15 +240,40 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
     p_hand = checkAllHands(p_cards)
     c_hand = checkAllHands(c_cards)
 
+    print('Player hand: ' + p_hand)
+    print('CPU hand: ' + c_hand)
+
     # Fold if cpu has won more games than the allowed ratio
     if games_played > 3:
         if checkCardRanks(p_cards) >= checkCardRanks(c_cards) and cpu_win_amount/games_played >= CPU_MAX_WIN_RATIO:
+            # Try to make CPU's hand worse before folding
+            if c_hand == "pair":
+                if c_cards[2].value == c_cards[1].value or c_cards[2].value == c_cards[1].value:
+                    if c_cards[2].value > 2:
+                        c_cards[2].value -= 1
+                    else: c_cards[2].value += 1
+            elif c_hand == "flush":
+                if c_cards[2].suit == "clubs":
+                    c_cards[2].suit = "diamonds"
+                if c_cards[2].suit == "diamonds":
+                    c_cards[2].suit = "clubs"
+                if c_cards[2].suit == "hearts":
+                    c_cards[2].suit = "spades"
+                if c_cards[2].suit == "spades":
+                    c_cards[2].suit = "hearts"
+            elif c_hand == "straight":
+                c_cards[2].value = c_cards[1].value
+            elif c_hand == "triple":
+                if c_cards[2].value > 2:
+                    c_cards[2].value -= 1
+                else: c_cards[2].value += 1
+            elif c_hand == "straight-flush":
+                c_cards[2].value = c_cards[1].value
+            fixFace(c_cards[2])
+
             print('Automatically folding...')
             cpu_win_amount = 0
             return -1
-
-    print('Player hand: ' + p_hand)
-    print('CPU hand: ' + c_hand)
 
     # Decision making for when the player has a pair.
     if p_hand == "none":
@@ -429,16 +454,17 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
                 return 0
         elif c_hand == "flush":
             # Try to get straight-flush
-            if c_cards[0].value < c_cards[1].value and c_cards[1].value is not 14:
+            if c_cards[0].value < c_cards[1].value and c_cards[1].value != 14:
                 c_cards[2].value = c_cards[1].value+1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
                 return CPU_RAISE_AMOUNT
-            elif c_cards[0].value > c_cards[1].value and c_cards[1].value is not 2:
+            elif c_cards[0].value > c_cards[1].value and c_cards[1].value != 2:
                 c_cards[2].value = c_cards[1].value-1
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
                 return CPU_RAISE_AMOUNT
+            # If straight-flush is not possible, remove player' straight
             else:
                 # Make player's hand worse
                 p_cards[2].value = p_cards[1].value
@@ -478,19 +504,22 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
             else:
                 p_cards[2].value += 1
             print('Altered player\'s deck')
+
             # Try to change to triple
             if c_cards[0].value == c_cards[1].value:
                 c_cards[2].value = c_cards[1].value
                 fixFace(c_cards[2])
                 print('Altered CPU\'s deck')
             return CPU_RAISE_AMOUNT
-        else:
+        elif c_hand == "flush" or c_hand == "straight" or c_hand == "triple":
             # Make player's hand worse
             if p_cards[2].value > 2:
                 p_cards[2].value -= 1
             else:
                 p_cards[2].value += 1
             fixFace(c_cards[2])
+            return CPU_RAISE_AMOUNT
+        else:
             return CPU_RAISE_AMOUNT
 
     # Make a decision for when the player has a straight-flush.
@@ -500,6 +529,7 @@ def makeComputerDecision(p_cards, c_cards, c_bet, cpu_win_amount, games_played):
             p_cards[2].value = p_cards[1].value
             fixFace(p_cards[2])
             return CPU_RAISE_AMOUNT
+        # If any other hand, fold to avoid obvious cheating.
         else: return -1
 
 # Generate lists of sprites for each player card and computer card. Indexes are in the same order.
